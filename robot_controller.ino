@@ -1,8 +1,8 @@
 #include <Servo.h>
 #include <Wire.h> 
-#include "IOpins.h"
-#include "Constants.h"
-#include "Adafruit_BMP085.h" 
+#include "IOpins.h" 
+#include "Constants.h" 
+#include "Adafruit_BMP085.h"
 
 //-------------------------------------------------------------- define global variables --------------------------------------------
 
@@ -24,11 +24,16 @@ byte Rightmodechange=0;                                       // Right input mus
 int  LeftPWM;                                                 // PWM value for left  motor speed / brake
 int  RightPWM;                                                // PWM value for right motor speed / brake
 
+//желаемая скорость
+int  t_LeftPWM;                                                 // PWM value for left  motor speed 
+int  t_RightPWM;                                                // PWM value for right motor speed 
+long t_Time;
+
 //делитель для определения скорости двигателей в зависимости от входного напряжения
 int  scale    = 20;
 long Time     = 0;                                            //счетчик времени для таймаута
 int  TimeOut  = 1000;		                              //таймаут
-String Command = String("");					              //буфер комманд
+String Command = String("");                                  //буфер комманд
 int  mSpeed   = 90;					      //скорость двигателей
 
 
@@ -80,19 +85,28 @@ void sendAns(String s, bool sendEnd = 1)
 
 void setTimeOut(int t)
 {
-    Time = millis();
+    Time    = millis();
+    t_Time  = Time;
     TimeOut = t;
 }
 
 //Комманды для двигателей
+void move_stop()
+{
+    setTimeOut(1000);  
+    t_LeftPWM   = 0;
+    t_RightPWM  = 0;
+    LeftPWM     = 0;
+    RightPWM    = 0;
+}
 void move_forward()
 {
     setTimeOut(1000);
     //forward
     Leftmode  = 2;
     Rightmode = 2;
-    LeftPWM   = mSpeed;
-    RightPWM  = mSpeed;
+    t_LeftPWM   = mSpeed;
+    t_RightPWM  = mSpeed;
 }
 void move_backward()
 {
@@ -100,24 +114,24 @@ void move_backward()
     //reverse
     Leftmode  = 0;
     Rightmode = 0;
-    LeftPWM   = mSpeed;
-    RightPWM  = mSpeed;
+    t_LeftPWM   = mSpeed;
+    t_RightPWM  = mSpeed;
 }
 void move_left()
 {
-    setTimeOut(100);
+    setTimeOut(1000);
     Leftmode  = 0;
     Rightmode = 2;
-    LeftPWM   = 2*mSpeed;
-    RightPWM  = 2*mSpeed;
+    t_LeftPWM   = mSpeed;
+    t_RightPWM  = mSpeed;
 }
 void move_right()
 {
-    setTimeOut(100);
+    setTimeOut(1000);
     Leftmode  = 2;
     Rightmode = 0;
-    LeftPWM   = 2*mSpeed;
-    RightPWM  = 2*mSpeed;
+    t_LeftPWM   = mSpeed;
+    t_RightPWM  = mSpeed;
 }
 //комманды сервам
 void cam_up()
@@ -148,12 +162,24 @@ void SCmode()
   int32_t Pressure;
   int     data;
 
+
+  if (millis() - t_Time > 10)
+  {
+//    LeftPWM  = t_LeftPWM;
+//    RightPWM = t_RightPWM; 
+     t_Time = millis();
+     if (LeftPWM < t_LeftPWM )
+         LeftPWM  = t_LeftPWM  * 2 * (t_Time - Time)/TimeOut; 
+     if (RightPWM < t_RightPWM )
+         RightPWM = t_RightPWM * 2 * (t_Time - Time)/TimeOut;
+  }
+  
+
   //не было комманд, по тормозам
   if (millis() - Time > TimeOut)
   {
-    Time = millis();
-    LeftPWM   = 0;   
-    RightPWM  = 0;
+    // стоп
+    move_stop();   
   }
   
   //сервы в позиции
@@ -238,6 +264,11 @@ void SCmode()
   } //  if (Serial.available() > 0 )
 }
 
+float getRealVolts(int Volts)
+{
+  return Volts / 1023.0 * 5.0 * 3.0;
+}
+
 void setup()
 {
   //------------------------------------------------------------ Initialize Servos ----------------------------------------------------
@@ -276,10 +307,11 @@ void setup()
   //#todo написать применение
   //вычисляем scale в зависимости от входного напряжения
   Volts    = analogRead(Battery);                                  // read the battery voltage
+  //пока scale ни к чему
   //#todo написать объяснение
   scale = 15 * (Volts / 1023.0 * 5.0 * 3.0) / 6.0 * (500.0 / 255);
-//  if (scale == 0)
-//    scale = 12;
+  // считываем скорость для двигателей
+  mSpeed = 3.0 / getRealVolts(Volts) * 255; //надо на двигателях X.X Вольт
 
 }
 
@@ -317,10 +349,10 @@ void loop()
     startVolts=Volts;
     chargeTimer=millis();                                     // record the time
 
-        if(lipoBatt==0)                                                                                   // checks if LiPo is being used, if not enable the charge cir$
-        {
-                digitalWrite (Charger,0);                                 // enable current regulator to charge battery
-        }
+    if(lipoBatt==0)                                           // checks if LiPo is being used, if not enable the charge cir$
+    {
+          digitalWrite (Charger,0);                           // enable current regulator to charge battery
+    }
   }
 */
 //------------------------------------------------------------ CHARGE BATTERY -------------------------------------------------------
