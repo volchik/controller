@@ -155,6 +155,10 @@ void cam_right()
     if(ServoPos[0] < 0) ServoPos[0] = 0;
 }
 
+void LightOn(int On)
+{
+    digitalWrite(Light,On);
+}
 
 void SCmode()
 {// ------------------------------------------------------------ Code for Serial Communications --------------------------------------
@@ -163,15 +167,21 @@ void SCmode()
   int     data;
 
 
-  if (millis() - t_Time > 10)
+  if (millis() - t_Time > 100)
   {
-//    LeftPWM  = t_LeftPWM;
-//    RightPWM = t_RightPWM; 
+//     LeftPWM  = t_LeftPWM;
+//     RightPWM = t_RightPWM; 
+
      t_Time = millis();
      if (LeftPWM < t_LeftPWM )
-         LeftPWM  = t_LeftPWM  * 2 * (t_Time - Time)/TimeOut; 
+         LeftPWM  = t_LeftPWM  * 4 * (t_Time - Time)/TimeOut; 
      if (RightPWM < t_RightPWM )
-         RightPWM = t_RightPWM * 2 * (t_Time - Time)/TimeOut;
+         RightPWM = t_RightPWM * 4 * (t_Time - Time)/TimeOut;
+     
+     if (LeftPWM > t_LeftPWM )
+         LeftPWM = t_LeftPWM;
+     if (RightPWM > t_RightPWM )
+         RightPWM = t_RightPWM;
   }
   
 
@@ -183,7 +193,7 @@ void SCmode()
   }
   
   //сервы в позиции
-  for(int i=0;i<7;i++)
+  for(int i=0;i<6;i++)
   {
     Servo[i].write(ServoPos[i]); 
   }
@@ -247,6 +257,16 @@ void SCmode()
         cam_right();
         sendAns(Command);
       }
+//LightOn
+      if(Command.equals(String("LO")))
+      {
+         LightOn(255);
+      }
+//LightOff
+      if(Command.equals(String("LF")))
+      {
+         LightOn(0);
+      }
 //Temperature
       if(Command.equals(String("TG")))
       {
@@ -278,7 +298,7 @@ void setup()
   Servo[3].attach(S3);                                          // attach servo to I/O pin
   Servo[4].attach(S4);                                          // attach servo to I/O pin
   Servo[5].attach(S5);                                          // attach servo to I/O pin
-  Servo[6].attach(S6);                                          // attach servo to I/O pin
+//  Servo[6].attach(S6);                                          // attach servo to I/O pin
   //------------------------------------------------------------ Set servos to default position ---------------------------------------
 
   Servo[0].writeMicroseconds(DServo0);                          // set servo to default position
@@ -287,7 +307,7 @@ void setup()
   Servo[3].writeMicroseconds(DServo3);                          // set servo to default position
   Servo[4].writeMicroseconds(DServo4);                          // set servo to default position
   Servo[5].writeMicroseconds(DServo5);                          // set servo to default position
-  Servo[6].writeMicroseconds(DServo6);                          // set servo to default position
+//  Servo[6].writeMicroseconds(DServo6);                          // set servo to default position
 
   //------------------------------------------------------------ Initialize I/O pins --------------------------------------------------
 
@@ -298,7 +318,7 @@ void setup()
   Serial.flush();                                           // flush buffer
 
   //сервы в позицию 90 градусов
-  for(int i=0;i<7;i++)
+  for(int i=0;i<6;i++)
   {
     ServoPos[i] = 90;
     Servo[i].write(ServoPos[i]);
@@ -311,7 +331,7 @@ void setup()
   //#todo написать объяснение
   scale = 15 * (Volts / 1023.0 * 5.0 * 3.0) / 6.0 * (500.0 / 255);
   // считываем скорость для двигателей
-  mSpeed = 3.0 / getRealVolts(Volts) * 255; //надо на двигателях X.X Вольт
+  mSpeed = 5.0 / getRealVolts(Volts) * 255; //надо на двигателях X.X Вольт
 
 }
 

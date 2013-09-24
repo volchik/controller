@@ -25,4 +25,5 @@
 #define RmotorC             6  // Analog input 06
 #define LmotorC             7  // Analog input 07
 #define Charger            13  // Low=ON High=OFF`
+#define Light              12  // Low=OFF High=ON
 
