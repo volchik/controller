@@ -261,11 +261,13 @@ void SCmode()
       if(Command.equals(String("LO")))
       {
          LightOn(255);
+         sendAns(Command);
       }
 //LightOff
       if(Command.equals(String("LF")))
       {
          LightOn(0);
+         sendAns(Command);
       }
 //Temperature
       if(Command.equals(String("TG")))
