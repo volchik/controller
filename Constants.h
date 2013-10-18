@@ -26,10 +26,14 @@
 
 //=================================== H BRIDGE SETTINGS =============================================================================
 
-#define Leftmaxamps        800     // set overload current for left motor 
-#define Rightmaxamps       800     // set overload current for right motor 
+#define Leftmaxamps        800     // set overload current for left motor
+#define Rightmaxamps       800     // set overload current for right motor
 #define overloadtime       100     // time in mS before motor is re-enabled after overload occurs
 
+
+//=================================== MOTOR SETTINGS =============================================================================
+#define LowMotorVolts      2.5     // минимальное напряжение на двигателях чтобы их привести в движение
+#define HighMotorVolts     5.0     // максимальное напряжение на двигателях
 
 
 //=================================== SERVO SETTINGS ================================================================================

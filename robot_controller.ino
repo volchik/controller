@@ -30,12 +30,11 @@ int  t_RightPWM;                                                // PWM value for
 long t_Time;
 
 //делитель для определения скорости двигателей в зависимости от входного напряжения
-int  scale    = 20;
-long Time     = 0;                                            //счетчик времени для таймаута
+long StartTime= 0;                                            //счетчик времени для таймаута
 int  TimeOut  = 1000;		                              //таймаут
 String Command = String("");                                  //буфер комманд
-int  mSpeed   = 90;					      //скорость двигателей
-
+int LowMotorSpeed;                                            //мин. значение для ШИМ двигателей 
+int HighMotorSpeed;                                           //макс. значение для ШИМ двигателей
 
 //-------------------------------------------------------------- BMP085 -------------------------------------------------------------
 //барометр и др. вкусности
@@ -83,11 +82,11 @@ void sendAns(String s, bool sendEnd = 1)
     if(sendEnd) Serial.write(13);
 }
 
-void setTimeOut(int t)
+void setTimeOut(int timeOut)
 {
-    Time    = millis();
-    t_Time  = Time;
-    TimeOut = t;
+    StartTime = millis();
+    t_Time    = StartTime;
+    TimeOut   = timeOut;
 }
 
 //Комманды для двигателей
@@ -105,8 +104,11 @@ void move_forward()
     //forward
     Leftmode  = 2;
     Rightmode = 2;
-    t_LeftPWM   = mSpeed;
-    t_RightPWM  = mSpeed;
+    t_LeftPWM  = HighMotorSpeed;
+    t_RightPWM = HighMotorSpeed;
+    //начальное значение чтобы двигатели не гудели
+    LeftPWM   = LowMotorSpeed;
+    RightPWM  = LowMotorSpeed;
 }
 void move_backward()
 {
@@ -114,24 +116,33 @@ void move_backward()
     //reverse
     Leftmode  = 0;
     Rightmode = 0;
-    t_LeftPWM   = mSpeed;
-    t_RightPWM  = mSpeed;
+    t_LeftPWM  = HighMotorSpeed;
+    t_RightPWM = HighMotorSpeed;
+    //начальное значение чтобы двигатели не гудели
+    LeftPWM   = LowMotorSpeed;
+    RightPWM  = LowMotorSpeed;
 }
 void move_left()
 {
     setTimeOut(1000);
     Leftmode  = 0;
     Rightmode = 2;
-    t_LeftPWM   = mSpeed;
-    t_RightPWM  = mSpeed;
+    t_LeftPWM  = HighMotorSpeed;
+    t_RightPWM = HighMotorSpeed;
+    //начальное значение чтобы двигатели не гудели
+    LeftPWM   = LowMotorSpeed;
+    RightPWM  = LowMotorSpeed;
 }
 void move_right()
 {
     setTimeOut(1000);
     Leftmode  = 2;
     Rightmode = 0;
-    t_LeftPWM   = mSpeed;
-    t_RightPWM  = mSpeed;
+    t_LeftPWM  = HighMotorSpeed;
+    t_RightPWM = HighMotorSpeed;
+    //начальное значение чтобы двигатели не гудели
+    LeftPWM   = LowMotorSpeed;
+    RightPWM  = LowMotorSpeed;
 }
 //комманды сервам
 void cam_up()
@@ -166,17 +177,15 @@ void SCmode()
   int32_t Pressure;
   int     data;
 
-
-  if (millis() - t_Time > 100)
+  //наращиваем напряжение на двигателях с xxxPWM до t_xxx_PWM за 0.5с
+  if (millis() - t_Time > 10)
   {
-//     LeftPWM  = t_LeftPWM;
-//     RightPWM = t_RightPWM; 
-
      t_Time = millis();
      if (LeftPWM < t_LeftPWM )
-         LeftPWM  = t_LeftPWM  * 4 * (t_Time - Time)/TimeOut; 
+         LeftPWM  = LeftPWM  + (t_Time - StartTime)*(t_LeftPWM-LeftPWM)/500; 
      if (RightPWM < t_RightPWM )
-         RightPWM = t_RightPWM * 4 * (t_Time - Time)/TimeOut;
+         RightPWM = RightPWM + (t_Time - StartTime)*(t_RightPWM-RightPWM)/500;
+
      
      if (LeftPWM > t_LeftPWM )
          LeftPWM = t_LeftPWM;
@@ -186,7 +195,7 @@ void SCmode()
   
 
   //не было комманд, по тормозам
-  if (millis() - Time > TimeOut)
+  if (millis() - StartTime > TimeOut)
   {
     // стоп
     move_stop();   
@@ -286,6 +295,7 @@ void SCmode()
   } //  if (Serial.available() > 0 )
 }
 
+//Преобразование считанного напряжения с АЦП в вольты
 float getRealVolts(int Volts)
 {
   return Volts / 1023.0 * 5.0 * 3.0;
@@ -326,15 +336,10 @@ void setup()
     Servo[i].write(ServoPos[i]);
   }
 
-  //#todo написать применение
-  //вычисляем scale в зависимости от входного напряжения
   Volts    = analogRead(Battery);                                  // read the battery voltage
-  //пока scale ни к чему
-  //#todo написать объяснение
-  scale = 15 * (Volts / 1023.0 * 5.0 * 3.0) / 6.0 * (500.0 / 255);
   // считываем скорость для двигателей
-  mSpeed = 5.0 / getRealVolts(Volts) * 255; //надо на двигателях X.X Вольт
-
+  LowMotorSpeed  = LowMotorVolts  / getRealVolts(Volts) * 255; //надо на двигателях LowMotorVolts вольт
+  HighMotorSpeed = HighMotorVolts / getRealVolts(Volts) * 255; //надо на двигателях HighMotorVolts вольт
 }
 
 void loop()
