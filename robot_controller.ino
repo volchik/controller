@@ -36,6 +36,8 @@ String Command = String("");                                  //буфер ко�
 int LowMotorSpeed;                                            //мин. значение для ШИМ двигателей 
 int HighMotorSpeed;                                           //макс. значение для ШИМ двигателей
 
+int lightOn = 0;                                              //состояние освещения
+
 //-------------------------------------------------------------- BMP085 -------------------------------------------------------------
 //барометр и др. вкусности
 Adafruit_BMP085 bmp;   
@@ -169,6 +171,7 @@ void cam_right()
 void LightOn(int On)
 {
     digitalWrite(Light,On);
+    lightOn = On;
 }
 
 void SCmode()
@@ -277,6 +280,14 @@ void SCmode()
       {
          LightOn(0);
          sendAns(Command);
+      }
+//LightGet
+      if(Command.equals(String("LG")))
+      {
+         if (lightOn)
+            sendAns(Command+String("1"));
+         else
+            sendAns(Command+String("0"));
       }
 //Temperature
       if(Command.equals(String("TG")))
