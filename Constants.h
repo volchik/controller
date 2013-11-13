@@ -12,8 +12,6 @@
 #define Leftcenter        1500     // when RC inputs are centered then input should be 1.5mS
 #define Rightcenter       1500     // when RC inputs are centered then input should be 1.5mS
 #define RCdeadband          35     // inputs do not have to be perfectly centered to stop motors
-//#define scale               20 // 12     // scale factor for RC signal to PWM
-
 
 
 //=================================== BATTERY CHARGER SETTINGS ======================================================================
@@ -32,7 +30,7 @@
 
 
 //=================================== MOTOR SETTINGS =============================================================================
-#define LowMotorVolts      2.5     // минимальное напряжение на двигателях чтобы их привести в движение
+#define LowMotorVolts      4.0     // минимальное напряжение на двигателях чтобы их привести в движение
 #define HighMotorVolts     5.0     // максимальное напряжение на двигателях
 
 
@@ -46,5 +44,14 @@
 #define DServo5           1500     // default position for servo5 on "power up" - 1500uS is center position on most servos
 #define DServo6           1500     // default position for servo6 on "power up" - 1500uS is center position on most servos
 
+//=================================== EEPROM ADDRESS SETTINGS =======================================================================
+#define Adr_Light            0
+#define Adr_Turn             1
+#define Adr_Tilt             2
 
 
+//=================================== SERVO TURN AND TILT SETTINGS ==================================================================
+#define Min_Pos_Turn         0     // минимальная позиция сервы поворота
+#define Max_Pos_Turn       180     // максимальная позиция сервы поворота
+#define Min_Pos_Tilt        30     // минимальная позиция сервы наклона
+#define Max_Pos_Tilt       140     // максимальная позиция сервы наклона

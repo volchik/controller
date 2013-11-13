@@ -1,3 +1,4 @@
+#include <EEPROM.h>
 #include <Servo.h>
 #include <Wire.h> 
 #include "IOpins.h" 
@@ -44,8 +45,10 @@ Adafruit_BMP085 bmp;
 
 
 //-------------------------------------------------------------- define servos ------------------------------------------------------
-Servo Servo[7];                                               // define servos
-int ServoPos[7];
+Servo Servo_Turn;                                             // серва поворота
+Servo Servo_Tilt;                                             // серва наклона
+int Pos_Turn;                                                 // позиция сервы поворота
+int Pos_Tilt;                                                 // позиция сервы наклона
 
   
 int16_t GetTemperature(void)
@@ -149,29 +152,45 @@ void move_right()
 //комманды сервам
 void cam_up()
 {
-    ServoPos[1] += 5;
-    if(ServoPos[1] > 140) ServoPos[1] = 140;
+    Pos_Tilt += 5;
+    if(Pos_Tilt > Max_Pos_Tilt) 
+        Pos_Tilt = Max_Pos_Tilt;
+    else 
+       EEPROM.write(Adr_Tilt,Pos_Tilt);
 }
 void cam_down()
 {
-    ServoPos[1] -= 5;
-    if(ServoPos[1] < 30) ServoPos[1] = 30;
+    Pos_Tilt -= 5;
+    if(Pos_Tilt < Min_Pos_Tilt) 
+       Pos_Tilt = Min_Pos_Tilt;
+    else 
+       EEPROM.write(Adr_Tilt,Pos_Tilt);
 }
 void cam_left()
 {
-    ServoPos[0] += 5;
-    if(ServoPos[0] > 180) ServoPos[0] = 180;
+    Pos_Turn += 5;
+    if(Pos_Turn > Max_Pos_Turn) 
+       Pos_Turn = Max_Pos_Turn;
+    else 
+       EEPROM.write(Adr_Turn,Pos_Turn);
 }
 void cam_right()
 {
-    ServoPos[0] -= 5;
-    if(ServoPos[0] < 0) ServoPos[0] = 0;
+    Pos_Turn -= 5;
+    if(Pos_Turn < Min_Pos_Turn) 
+       Pos_Turn = Min_Pos_Turn;
+    else 
+       EEPROM.write(Adr_Turn,Pos_Turn);
 }
 
 void LightOn(int On)
 {
     digitalWrite(Light,On);
-    lightOn = On;
+    if (lightOn != On)
+    {   
+       lightOn = On;
+       EEPROM.write(Adr_Light,On);
+    }
 }
 
 void SCmode()
@@ -180,14 +199,14 @@ void SCmode()
   int32_t Pressure;
   int     data;
 
-  //наращиваем напряжение на двигателях с xxxPWM до t_xxx_PWM за 0.5с
+  //наращиваем напряжение на двигателях с xxxPWM до t_xxx_PWM за 0.3с
   if (millis() - t_Time > 10)
   {
      t_Time = millis();
      if (LeftPWM < t_LeftPWM )
-         LeftPWM  = LeftPWM  + (t_Time - StartTime)*(t_LeftPWM-LeftPWM)/500; 
+         LeftPWM  = LeftPWM  + (t_Time - StartTime)*(t_LeftPWM-LeftPWM)/300; 
      if (RightPWM < t_RightPWM )
-         RightPWM = RightPWM + (t_Time - StartTime)*(t_RightPWM-RightPWM)/500;
+         RightPWM = RightPWM + (t_Time - StartTime)*(t_RightPWM-RightPWM)/300;
 
      
      if (LeftPWM > t_LeftPWM )
@@ -205,16 +224,13 @@ void SCmode()
   }
   
   //сервы в позиции
-  for(int i=0;i<6;i++)
-  {
-    Servo[i].write(ServoPos[i]); 
-  }
+  Servo_Turn.write(Pos_Turn); 
+  Servo_Tilt.write(Pos_Tilt); 
 
   //что-то пришло
   if (Serial.available() > 0)
   {
     data = Serial.read();
-//    Serial.write(data);
 
     if (data != 13)
     {
@@ -315,22 +331,15 @@ float getRealVolts(int Volts)
 void setup()
 {
   //------------------------------------------------------------ Initialize Servos ----------------------------------------------------
-  Servo[0].attach(S0);                                          // attach servo to I/O pin
-  Servo[1].attach(S1);                                          // attach servo to I/O pin
-  Servo[2].attach(S2);                                          // attach servo to I/O pin
-  Servo[3].attach(S3);                                          // attach servo to I/O pin
-  Servo[4].attach(S4);                                          // attach servo to I/O pin
-  Servo[5].attach(S5);                                          // attach servo to I/O pin
-//  Servo[6].attach(S6);                                          // attach servo to I/O pin
-  //------------------------------------------------------------ Set servos to default position ---------------------------------------
+  Servo_Turn.attach(Pin_Turn);                                  // подключить серву поворота
+  Servo_Tilt.attach(Pin_Tilt);                                  // подключить серву наклона
 
-  Servo[0].writeMicroseconds(DServo0);                          // set servo to default position
-  Servo[1].writeMicroseconds(DServo1);                          // set servo to default position
-  Servo[2].writeMicroseconds(DServo2);                          // set servo to default position
-  Servo[3].writeMicroseconds(DServo3);                          // set servo to default position
-  Servo[4].writeMicroseconds(DServo4);                          // set servo to default position
-  Servo[5].writeMicroseconds(DServo5);                          // set servo to default position
-//  Servo[6].writeMicroseconds(DServo6);                          // set servo to default position
+
+  //------------------------------------------------------------ Чтение значений из EEPROM --------------------------------------------
+  Pos_Turn = EEPROM.read(Adr_Turn);
+  Pos_Tilt = EEPROM.read(Adr_Tilt);
+  lightOn  = EEPROM.read(Adr_Light);
+  digitalWrite(Light,lightOn);                                 // установить значение освещения
 
   //------------------------------------------------------------ Initialize I/O pins --------------------------------------------------
 
@@ -339,13 +348,6 @@ void setup()
 
   Serial.begin(Brate);                                      // enable serial communications if Cmode=1
   Serial.flush();                                           // flush buffer
-
-  //сервы в позицию 90 градусов
-  for(int i=0;i<6;i++)
-  {
-    ServoPos[i] = 90;
-    Servo[i].write(ServoPos[i]);
-  }
 
   Volts    = analogRead(Battery);                                  // read the battery voltage
   // считываем скорость для двигателей
