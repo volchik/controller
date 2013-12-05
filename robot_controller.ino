@@ -185,7 +185,9 @@ void cam_right()
 
 void LightOn(int On)
 {
-    digitalWrite(Light,On);
+    if (Light_Invert)
+      digitalWrite(Light,~On);                                  // установить значение освещения
+    else digitalWrite(Light,On);                                // установить значение освещения
     if (lightOn != On)
     {   
        lightOn = On;
@@ -339,7 +341,11 @@ void setup()
   Pos_Turn = EEPROM.read(Adr_Turn);
   Pos_Tilt = EEPROM.read(Adr_Tilt);
   lightOn  = EEPROM.read(Adr_Light);
-  digitalWrite(Light,lightOn);                                 // установить значение освещения
+  pinMode(Light, OUTPUT);
+  if (Light_Invert)
+    digitalWrite(Light,~lightOn);                               // установить значение освещения
+  else digitalWrite(Light,lightOn);                             // установить значение освещения
+
 
   //------------------------------------------------------------ Initialize I/O pins --------------------------------------------------
 
