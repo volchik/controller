@@ -7,37 +7,36 @@
 
 //-------------------------------------------------------------- define global variables --------------------------------------------
 
-unsigned int Volts;
-unsigned int LeftAmps;
-unsigned int RightAmps;
+uint16_t Volts;
+uint16_t LeftAmps;
+uint16_t RightAmps;
 unsigned long chargeTimer;
 unsigned long leftoverload;
 unsigned long rightoverload;
-int  highVolts;
-int  startVolts;
-int  Leftspeed=0;
-int  Rightspeed=0;
+uint16_t highVolts;
+uint16_t startVolts;
 byte Charged=1;                                               // 0=Flat battery  1=Charged battery
 int  Leftmode=1;                                              // 0=reverse, 1=brake, 2=forward
 int  Rightmode=1;                                             // 0=reverse, 1=brake, 2=forward
 byte Leftmodechange=0;                                        // Left input must be 1500 before brake or reverse can occur
 byte Rightmodechange=0;                                       // Right input must be 1500 before brake or reverse can occur
-int  LeftPWM;                                                 // PWM value for left  motor speed / brake
-int  RightPWM;                                                // PWM value for right motor speed / brake
+uint16_t LeftPWM;                                             // PWM value for left  motor speed / brake
+uint16_t RightPWM;                                            // PWM value for right motor speed / brake
 
 //желаемая скорость
-int  t_LeftPWM;                                                 // PWM value for left  motor speed 
-int  t_RightPWM;                                                // PWM value for right motor speed 
-long t_Time;
+uint16_t t_LeftPWM;                                           // PWM value for left  motor speed 
+uint16_t t_RightPWM;                                          // PWM value for right motor speed 
+unsigned long t_Time;
 
 //делитель для определения скорости двигателей в зависимости от входного напряжения
-long StartTime= 0;                                            //счетчик времени для таймаута
-int  TimeOut  = 1000;		                              //таймаут
+unsigned long StartTime= 0;                                   //счетчик времени для таймаута
+uint16_t TimeOut  = 1000;		                      //таймаут
 String Command = String("");                                  //буфер комманд
-int LowMotorSpeed;                                            //мин. значение для ШИМ двигателей 
-int HighMotorSpeed;                                           //макс. значение для ШИМ двигателей
+double RealVolts;
+uint16_t LowMotorSpeed;                                       //мин. значение для ШИМ двигателей 
+uint16_t HighMotorSpeed;                                      //макс. значение для ШИМ двигателей
 
-int lightOn = 0;                                              //состояние освещения
+uint16_t lightOn = 0;                                         //состояние освещения
 
 //-------------------------------------------------------------- BMP085 -------------------------------------------------------------
 //барометр и др. вкусности
@@ -47,8 +46,8 @@ Adafruit_BMP085 bmp;
 //-------------------------------------------------------------- define servos ------------------------------------------------------
 Servo Servo_Turn;                                             // серва поворота
 Servo Servo_Tilt;                                             // серва наклона
-int Pos_Turn;                                                 // позиция сервы поворота
-int Pos_Tilt;                                                 // позиция сервы наклона
+uint16_t Pos_Turn;                                            // позиция сервы поворота
+uint16_t Pos_Tilt;                                            // позиция сервы наклона
 
   
 int16_t GetTemperature(void)
@@ -87,7 +86,7 @@ void sendAns(String s, bool sendEnd = 1)
     if(sendEnd) Serial.write(13);
 }
 
-void setTimeOut(int timeOut)
+void setTimeOut(uint16_t timeOut)
 {
     StartTime = millis();
     t_Time    = StartTime;
@@ -183,7 +182,7 @@ void cam_right()
        EEPROM.write(Adr_Turn,Pos_Turn);
 }
 
-void LightOn(int On)
+void LightOn(uint16_t On)
 {
     if (Light_Invert)
       digitalWrite(Light,~On);                                  // установить значение освещения
@@ -195,11 +194,28 @@ void LightOn(int On)
     }
 }
 
+//Преобразование считанного напряжения с АЦП в вольты
+double getRealVolts(uint16_t Volts)
+{
+  return Volts / 1023.0 * 5.0 * 3.0;
+}
+
+String FloatToString(double Value)
+{
+  String str = String("");
+  uint16_t val = Value;
+  str += String(val);
+  str += ".";
+  val = 100*(Value - int(Value));
+  str += String(val);
+  return str;
+}
+
 void SCmode()
 {// ------------------------------------------------------------ Code for Serial Communications --------------------------------------
   int16_t Temperature;
   int32_t Pressure;
-  int     data;
+  uint16_t data;
 
   //наращиваем напряжение на двигателях с xxxPWM до t_xxx_PWM за 0.3с
   if (millis() - t_Time > 10)
@@ -319,15 +335,15 @@ void SCmode()
          Pressure = GetPressure();
          sendAns(Command+String(Pressure));
       } 
+//Volts
+      if(Command.equals(String("VG")))
+      {
+         RealVolts = getRealVolts(Volts);
+         sendAns(Command+FloatToString(RealVolts));
+      }
       Command = String("");                                                     //чистим буфер
     } // if(data == 13)                                                    
   } //  if (Serial.available() > 0 )
-}
-
-//Преобразование считанного напряжения с АЦП в вольты
-float getRealVolts(int Volts)
-{
-  return Volts / 1023.0 * 5.0 * 3.0;
 }
 
 void setup()
