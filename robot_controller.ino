@@ -151,7 +151,7 @@ void move_right()
 //комманды сервам
 void cam_up()
 {
-    Pos_Tilt += 5;
+    Pos_Tilt += Step_Pos_Tilt;
     if(Pos_Tilt > Max_Pos_Tilt) 
         Pos_Tilt = Max_Pos_Tilt;
     else 
@@ -159,7 +159,7 @@ void cam_up()
 }
 void cam_down()
 {
-    Pos_Tilt -= 5;
+    Pos_Tilt -= Step_Pos_Tilt;
     if(Pos_Tilt < Min_Pos_Tilt) 
        Pos_Tilt = Min_Pos_Tilt;
     else 
@@ -167,7 +167,7 @@ void cam_down()
 }
 void cam_left()
 {
-    Pos_Turn += 5;
+    Pos_Turn += Step_Pos_Turn;
     if(Pos_Turn > Max_Pos_Turn) 
        Pos_Turn = Max_Pos_Turn;
     else 
@@ -175,7 +175,7 @@ void cam_left()
 }
 void cam_right()
 {
-    Pos_Turn -= 5;
+    Pos_Turn -= Step_Pos_Turn;
     if(Pos_Turn < Min_Pos_Turn) 
        Pos_Turn = Min_Pos_Turn;
     else 
